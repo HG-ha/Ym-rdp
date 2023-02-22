@@ -3,14 +3,14 @@ import os
 import win32crypt
 import sys
 import binascii
-#导入QT组件
+# 导入QT组件
 from PyQt5.QtWidgets import QMainWindow,QApplication,QHeaderView,QAbstractItemView,QTableWidgetItem,QMenu,QMessageBox
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon
-#导入主界面UI
+# 导入主界面UI
 from rdpui import Ui_Dialog
 
-
+# 实际上你可以直接用这个方法来生成rdp文件去免密连接
 class ConnDesk:
     def __init__(self,username,password,host) -> None:
 
@@ -67,15 +67,15 @@ bitmapcachepersistenable:i:1
         os.system(cmd)
         
 
-#继承视窗和UI
+# 继承视窗和UI
 class MainCode(QMainWindow,Ui_Dialog):
 
     def __init__(self):
-        #初始化
+        # 初始化
         QMainWindow.__init__(self)
         Ui_Dialog.__init__(self)
 
-        #将UI生成传到self
+        # 将UI生成传到self
         self.setupUi(self)
         self.filedb = './ymhost.json'
         # 数据文件
@@ -83,26 +83,26 @@ class MainCode(QMainWindow,Ui_Dialog):
             print("加载数据")
             self.relodb()
 
-        #禁止修改表格
+        # 禁止修改表格
         # self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #不显示行名称
+        # 不显示行名称
         self.tableWidget.verticalHeader().setVisible(False)
-        #让表格铺满
+        # 让表格铺满
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        #让选中项变成一行
+        # 让选中项变成一行
         self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         # 列头双击自动排序
         # self.tableWidget.setSortingEnabled(True)
         
-        #绑定表格右键事件
+        # 绑定表格右键事件
         self.tableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tableWidget.customContextMenuRequested[QtCore.QPoint].connect(self.del_table_line)
 
-        #表格数据更新时的事件
+        # 表格数据更新时的事件
         # self.tableWidget.doubleClicked.connect(self.on_click)# 被双击修改时
         self.tableWidget.itemChanged.connect(self.on_update)# 内容已更新时
 
-        #绑定添加按钮的事件
+        # 绑定添加按钮的事件
         self.pushButton.clicked.connect(self.add_desk)
 
     def on_update(self):
@@ -179,7 +179,7 @@ class MainCode(QMainWindow,Ui_Dialog):
         #     print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
         pass
 
-     #右键表格功能
+     # 右键表格功能
     def del_table_line(self, pos):
         pop_menu = QMenu()
         conn_desk = pop_menu.addAction('连接桌面')
