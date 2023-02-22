@@ -10,9 +10,6 @@ from PyQt5.QtGui import QIcon
 #导入主界面UI
 from rdpui import Ui_Dialog
 
-#任务栏图标，实际上效果很魔幻
-import ctypes
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("myappid")
 
 class ConnDesk:
     def __init__(self,username,password,host) -> None:
