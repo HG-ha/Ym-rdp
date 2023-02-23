@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
+#转换UI文件
+#pyuic5 -o rdpui.py rdp.ui
+
 import os
 import win32crypt
 import sys
 import binascii
-# 导入QT组件
-from PyQt5.QtWidgets import QMainWindow,QApplication,QHeaderView,QAbstractItemView,QTableWidgetItem,QMenu,QMessageBox
+#导入QT组件
+from PyQt5.QtWidgets import QMainWindow,QApplication,QHeaderView,QAbstractItemView,QTableWidgetItem,QMenu,QMessageBox,QTableWidget
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon
-# 导入主界面UI
+from PyQt5.QtGui import QIcon,QBrush,QColor
+#导入主界面UI
 from rdpui import Ui_Dialog
-
-# 实际上你可以直接用这个方法来生成rdp文件去免密连接
+import query_ico_rc
 class ConnDesk:
     def __init__(self,username,password,host) -> None:
 
@@ -67,15 +68,19 @@ bitmapcachepersistenable:i:1
         os.system(cmd)
         
 
-# 继承视窗和UI
+
+
+
+
+#继承视窗和UI
 class MainCode(QMainWindow,Ui_Dialog):
 
     def __init__(self):
-        # 初始化
+        #初始化
         QMainWindow.__init__(self)
         Ui_Dialog.__init__(self)
 
-        # 将UI生成传到self
+        #将UI生成传到self
         self.setupUi(self)
         self.filedb = './ymhost.json'
         # 数据文件
@@ -83,27 +88,63 @@ class MainCode(QMainWindow,Ui_Dialog):
             print("加载数据")
             self.relodb()
 
-        # 禁止修改表格
+        # 设置鼠标为跟踪状态，对当前继承的窗体生效
+        # 子控件的设定鼠标跟踪事件应在UI文件内指定.setMouseTracking(True)
+        # self.setMouseTracking(True)
+       
+
+        #禁止修改表格
         # self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        # 不显示行名称
+        #不显示行名称
         self.tableWidget.verticalHeader().setVisible(False)
-        # 让表格铺满
+        #让表格铺满
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        # 让选中项变成一行
-        self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        #让选中项变成一行
+        # self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         # 列头双击自动排序
         # self.tableWidget.setSortingEnabled(True)
         
-        # 绑定表格右键事件
+        #绑定表格右键事件
         self.tableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tableWidget.customContextMenuRequested[QtCore.QPoint].connect(self.del_table_line)
 
-        # 表格数据更新时的事件
+        #表格数据更新时的事件
         # self.tableWidget.doubleClicked.connect(self.on_click)# 被双击修改时
         self.tableWidget.itemChanged.connect(self.on_update)# 内容已更新时
 
-        # 绑定添加按钮的事件
+        # 表格单元格被单击的事件
+        # self.tableWidget.currentCellChanged.connect(self.slot_currentCellChanged)
+
+        # 鼠标移到单元格上时触发
+        # 将地址和密码字体设为黑色，取消隐藏
+        self.tableWidget.itemEntered.connect(self.handleItemEntered)
+        # 鼠标离开单元格时触发
+        # 将地址和密码字体设为白色，隐藏
+        self.tableWidget.itemPressed.connect(self.handleItemExited)
+        #绑定添加按钮的事件
         self.pushButton.clicked.connect(self.add_desk)
+
+
+    def handleItemEntered(self,item):
+        if item.column() == 1 or item.column() == 3:
+            item.setForeground(QBrush(QColor(0,0,0)))
+    
+    def handleItemExited(self, item):
+        if item.column() == 1 or item.column() == 3:
+            item.setForeground(QBrush(QColor(255,255,255)))
+        
+
+    def mouseMoveEvent(self, event):
+        #重载mouseMoveEvent方法，监听鼠标移动,默认情况下只有当鼠标被点击时才会触发鼠标事件，从而被该方法监听到
+        print("鼠标位置 ",event.localPos().x(),event.localPos().y())
+
+    
+    def cell_changed(self,row,column):
+        print(row, column)
+
+    def slot_currentCellChanged(self, row, column):
+        print("点击了单元格：" + str(row) + "," + str(column))
+
 
     def on_update(self):
         print("有更新")
@@ -126,11 +167,21 @@ class MainCode(QMainWindow,Ui_Dialog):
                 # print(hostjson[currentQTableWidgetItem.row()]["name"],currentQTableWidgetItem.text())
                 hostjson[addline]["name"] = currentQTableWidgetItem.text()
             if currentQTableWidgetItem.column() == 1:
-                hostjson[addline]["host"] = currentQTableWidgetItem.text()
+                try:
+                    hostjson[addline]["host"] = currentQTableWidgetItem.text()
+                except:
+                    pass
+                finally:
+                    currentQTableWidgetItem.setForeground(QBrush(QColor(255,255,255))) # 隐藏地址
             if currentQTableWidgetItem.column() == 2:
                 hostjson[addline]["username"] = currentQTableWidgetItem.text()
             if currentQTableWidgetItem.column() == 3:
-                hostjson[addline]["password"] = currentQTableWidgetItem.text()
+                try:
+                    hostjson[addline]["password"] = currentQTableWidgetItem.text()
+                except:
+                    pass
+                finally:
+                    currentQTableWidgetItem.setForeground(QBrush(QColor(255,255,255))) # 隐藏密码
         filedata.write(str(hostjson))
         filedata.close()
         self.tableWidget.update()
@@ -152,6 +203,9 @@ class MainCode(QMainWindow,Ui_Dialog):
                     self.tableWidget.insertRow(row)
                     for listed in range(len(info)):
                         item = QTableWidgetItem(str(info[listed]))
+                        # 将地址和密码置为与背景色相同，即隐藏地址和密码
+                        if listed == 1 or listed == 3:
+                            item.setForeground(QBrush(QColor(255,255,255)))
                         item.setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
                         self.tableWidget.setItem(row,listed,item)
                     self.tableWidget.update()
@@ -179,7 +233,7 @@ class MainCode(QMainWindow,Ui_Dialog):
         #     print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
         pass
 
-     # 右键表格功能
+     #右键表格功能
     def del_table_line(self, pos):
         pop_menu = QMenu()
         conn_desk = pop_menu.addAction('连接桌面')
@@ -275,10 +329,12 @@ class MainCode(QMainWindow,Ui_Dialog):
                     hostjson[addlen]["name"] = info[listed]
                 if listed == 1:
                     hostjson[addlen]["host"] = info[listed]
+                    item.setForeground(QBrush(QColor(255,255,255))) # 隐藏地址
                 if listed == 2:
                     hostjson[addlen]["username"] = info[listed]
                 if listed == 3:
                     hostjson[addlen]["password"] = info[listed]
+                    item.setForeground(QBrush(QColor(255,255,255))) # 隐藏密码
             # print(hostjson)
             filedata.write(str(hostjson))
             filedata.close()
