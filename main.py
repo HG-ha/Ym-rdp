@@ -1,6 +1,5 @@
 #转换UI文件
 #pyuic5 -o rdpui.py rdp.ui
-
 import os
 import win32crypt
 import sys
@@ -13,14 +12,17 @@ from PyQt5.QtGui import QIcon,QBrush,QColor
 from rdpui import Ui_Dialog
 import query_ico_rc
 class ConnDesk:
-    def __init__(self,username,password,host) -> None:
-
+    def __init__(self,username,password,host,scre=1) -> None:
+        '''
+        scre: 0 全屏,1默认分辨率连接
+        '''
         # 临时rdp文件
         self.rdpTemp = "rdp.rdp"
 
         self.username = username
         self.password = password
         self.host = host
+        self.scre = scre
         
     def AddPwd(self):
         try:
@@ -29,8 +31,9 @@ class ConnDesk:
             # rdp模板文件
             self.model = f'''
 screen mode id:i:1 
-desktopwidth:i:1920 
-desktopheight:i:1080 
+desktopwidth:i:1650
+desktopheight:i:970
+screen mode id:i:{self.scre}
 session bpp:i:24 
 winposstr:s:2,3,188,8,1062,721 
 full address:s:{self.host}
@@ -42,7 +45,8 @@ redirectprinters:i:0
 redirectcomports:i:0 
 redirectsmartcards:i:0 
 displayconnectionbar:i:1 
-autoreconnection enabled:i:1 
+autoreconnection enabled:i:1
+authentication level:i:0
 username:s:{self.username}
 domain:s:MyDomain 
 alternate shell:s: 
@@ -236,7 +240,8 @@ class MainCode(QMainWindow,Ui_Dialog):
      #右键表格功能
     def del_table_line(self, pos):
         pop_menu = QMenu()
-        conn_desk = pop_menu.addAction('连接桌面')
+        conn_desk = pop_menu.addAction('默认连接')
+        conn_maxdesk = pop_menu.addAction('全屏连接')
         # edit_desk = pop_menu.addAction('编辑桌面')
         del_desk = pop_menu.addAction('删除桌面')
         # export_desk = pop_menu.addAction('导出桌面')
@@ -246,7 +251,7 @@ class MainCode(QMainWindow,Ui_Dialog):
 
         # 选中连接桌面
         if action == conn_desk:
-            print("连接桌面")
+            print("普通连接")
             # 获取当前选中的行
             row = self.tableWidget.currentRow()
             # 获取当前选中行的主机地址
@@ -254,6 +259,20 @@ class MainCode(QMainWindow,Ui_Dialog):
             username = self.tableWidget.item(row , 2).text()
             password = self.tableWidget.item(row , 3).text()
             new = ConnDesk(username,password,host)
+            print("密码：",new.AddPwd())
+            # 开启连接
+            new.conn()
+
+        # 选中全屏连接
+        if action == conn_maxdesk:
+            print("全屏连接")
+            # 获取当前选中的行
+            row = self.tableWidget.currentRow()
+            # 获取当前选中行的主机地址
+            host = self.tableWidget.item(row , 1).text()
+            username = self.tableWidget.item(row , 2).text()
+            password = self.tableWidget.item(row , 3).text()
+            new = ConnDesk(username,password,host,0)
             print("密码：",new.AddPwd())
             # 开启连接
             new.conn()
