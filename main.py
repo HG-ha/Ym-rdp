@@ -5,7 +5,7 @@ import binascii
 #导入QT组件
 from PyQt5.QtWidgets import QMainWindow,QApplication,QHeaderView,QAbstractItemView,QTableWidgetItem,QMenu,QMessageBox,QTableWidget
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon,QBrush,QColor
+from PyQt5.QtGui import QIcon,QBrush,QColor,QCursor,QPalette,QPixmap
 #导入主界面UI
 from rdpui import Ui_Dialog
 import query_ico_rc
@@ -69,10 +69,6 @@ bitmapcachepersistenable:i:1
     def conn(self):
         cmd = f"mstsc {self.rdpTemp}"
         os.system(cmd)
-        
-
-
-
 
 
 #继承视窗和UI
@@ -86,46 +82,64 @@ class MainCode(QMainWindow,Ui_Dialog):
         #将UI生成传到self
         self.setupUi(self)
         self.filedb = './ymhost.json'
+
         # 数据文件
         if os.path.exists(self.filedb):
-            print("加载数据")
             self.relodb()
 
-        # 设置鼠标为跟踪状态，对当前继承的窗体生效
-        # 子控件的设定鼠标跟踪事件应在UI文件内指定.setMouseTracking(True)
-        # self.setMouseTracking(True)
-       
+        # label_5自定义标题栏图标
+        self.label_5.setScaledContents(True)
+        pixmap = QPixmap(':/app.ico')
+        self.label_5.setPixmap(pixmap)
 
-        #禁止修改表格
-        # self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # 引入全部样式
+        self.setStyleSheet(MyStyle())
+
+        # 隐藏标题栏
+        self.setWindowFlags(QtCore.Qt.CustomizeWindowHint)
+        # 去边框
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        # 将顶级画布设为透明
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        # 窗口透明度
+        # self.setWindowOpacity(0.9)
+       
         #不显示行名称
         self.tableWidget.verticalHeader().setVisible(False)
         #让表格铺满
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        #让选中项变成一行
-        # self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # 列头双击自动排序
-        # self.tableWidget.setSortingEnabled(True)
         
         #绑定表格右键事件
         self.tableWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tableWidget.customContextMenuRequested[QtCore.QPoint].connect(self.del_table_line)
 
         #表格数据更新时的事件
-        # self.tableWidget.doubleClicked.connect(self.on_click)# 被双击修改时
         self.tableWidget.itemChanged.connect(self.on_update)# 内容已更新时
 
-        # 表格单元格被单击的事件
-        # self.tableWidget.currentCellChanged.connect(self.slot_currentCellChanged)
-
-        # 鼠标移到单元格上时触发
-        # 将地址和密码字体设为黑色，取消隐藏
-        self.tableWidget.itemEntered.connect(self.handleItemEntered)
-        # 鼠标离开单元格时触发
-        # 将地址和密码字体设为白色，隐藏
-        self.tableWidget.itemPressed.connect(self.handleItemExited)
         #绑定添加按钮的事件
         self.pushButton.clicked.connect(self.add_desk)
+
+        # 最小化按钮
+        self.pushButton_4.clicked.connect(self.showMinimized)
+        # 关闭按钮
+        self.pushButton_2.clicked.connect(self.close)
+
+
+    def mousePressEvent(self, event): #鼠标拖拽窗口移动
+        if event.button() == QtCore.Qt.LeftButton:
+            self.m_flag = True
+            self.m_Position = event.globalPos() - self.pos()  # 获取鼠标相对窗口的位置
+            event.accept()
+            self.setCursor(QCursor(QtCore.Qt.OpenHandCursor))  # 更改鼠标图标
+
+    def mouseMoveEvent(self, QMouseEvent): #鼠标拖拽窗口移动
+        if QtCore.Qt.LeftButton and self.m_flag:
+            self.move(QMouseEvent.globalPos() - self.m_Position)  # 更改窗口位置
+            QMouseEvent.accept()
+
+    def mouseReleaseEvent(self, QMouseEvent): #鼠标拖拽窗口移动
+        self.m_flag = False
+        self.setCursor(QCursor(QtCore.Qt.ArrowCursor))
 
 
     def handleItemEntered(self,item):
@@ -136,18 +150,11 @@ class MainCode(QMainWindow,Ui_Dialog):
         if item.column() == 1 or item.column() == 3:
             item.setForeground(QBrush(QColor(255,255,255)))
         
-
-    def mouseMoveEvent(self, event):
-        #重载mouseMoveEvent方法，监听鼠标移动,默认情况下只有当鼠标被点击时才会触发鼠标事件，从而被该方法监听到
-        print("鼠标位置 ",event.localPos().x(),event.localPos().y())
-
-    
     def cell_changed(self,row,column):
         print(row, column)
 
     def slot_currentCellChanged(self, row, column):
         print("点击了单元格：" + str(row) + "," + str(column))
-
 
     def on_update(self):
         if len(self.tableWidget.selectedItems()) > 1:
@@ -231,7 +238,6 @@ class MainCode(QMainWindow,Ui_Dialog):
             except:
                 print("加载数据出错了")
 
-
     # 修改关闭程序的事件
     def closeEvent(self, event):
         print("保存并退出程序")
@@ -292,10 +298,6 @@ class MainCode(QMainWindow,Ui_Dialog):
             # 开启连接
             new.conn()
 
-        # # 选中编辑桌面
-        # if action == edit_desk:
-        #     print("编辑桌面")
-
         # 选中删除桌面
         if action == del_desk:
             selected_items = self.tableWidget.selectedItems()
@@ -316,18 +318,8 @@ class MainCode(QMainWindow,Ui_Dialog):
             filedata.close()
             self.tableWidget.update()
 
-        # 选中导出桌面
-        # if action == export_desk:
-        #     print("导出桌面")
-    
     # 添加一条记录
     def add_desk(self):
-            if self.radioButton.isChecked():
-                self.scrn = "full"
-                # print('选中了全屏')
-            if self.radioButton_2.isChecked():
-                self.scrn = "area"
-                # print('选中了窗口化')
             name = self.lineEdit.text()
             host = self.lineEdit_2.text()
             username = self.lineEdit_3.text()
@@ -374,10 +366,51 @@ class MainCode(QMainWindow,Ui_Dialog):
             filedata.close()
             self.tableWidget.update()
 
+def MyStyle():
+    return """
+        QPushButton {
+            background-color: #FFFFFF;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        QFrame {
+            background-color: #C9DEE6;
+            border-radius: 15px;
+        }
+        QFrame#frame_3 {
+            background-color: #9BC8DB;
+            border-radius: 15px;
+        }
+        QLabel#label_5 {
+            background-color: #FFFFFF;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        QLabel#label,#label_2,#label_3,#label_4 {
+            background-color: #ffffff;
+            border-radius: 5px;
+            margin-left: 5px;
+            margin-right: 5px;
+        }
+
+        QLineEdit {
+            background-color: #ffffff;
+            border-radius: 5px;
+            margin-left: 5px;
+            margin-right: 5px;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        QTableWidget {
+            background-color: rgb(255,255,255);
+            border-radius: 15px;
+        }
+        """
 
 if __name__ == "__main__":  
     app = QApplication(sys.argv) 
     window = MainCode()
     window.setWindowIcon(QIcon(":/app.ico"))
+    window.setFixedSize(window.width(), window.height())
     window.show()
     sys.exit(app.exec_())
