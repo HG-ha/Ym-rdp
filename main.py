@@ -1,5 +1,3 @@
-#转换UI文件
-#pyuic5 -o rdpui.py rdp.ui
 import os
 import win32crypt
 import sys
@@ -11,6 +9,7 @@ from PyQt5.QtGui import QIcon,QBrush,QColor
 #导入主界面UI
 from rdpui import Ui_Dialog
 import query_ico_rc
+
 class ConnDesk:
     def __init__(self,username,password,host,scre=1) -> None:
         '''
@@ -151,7 +150,23 @@ class MainCode(QMainWindow,Ui_Dialog):
 
 
     def on_update(self):
-        print("有更新")
+        if len(self.tableWidget.selectedItems()) > 1:
+            for currentQTableWidgetItem in self.tableWidget.selectedItems():
+                if currentQTableWidgetItem.column() == 1:
+                    try:
+                        hostjson[addline]["host"] = currentQTableWidgetItem.text()
+                    except:
+                        pass
+                    finally:
+                        currentQTableWidgetItem.setForeground(QBrush(QColor(255,255,255))) # 隐藏地址
+                if currentQTableWidgetItem.column() == 3:
+                    try:
+                        hostjson[addline]["password"] = currentQTableWidgetItem.text()
+                    except:
+                        pass
+                    finally:
+                        currentQTableWidgetItem.setForeground(QBrush(QColor(255,255,255))) # 隐藏密码
+            return
         if os.path.exists("./ymhost.json"):
             try:
                 hostjson = eval(open(self.filedb,"r",encoding="utf-8").read())
